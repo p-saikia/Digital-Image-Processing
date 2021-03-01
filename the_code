@@ -1,0 +1,126 @@
+clc
+clear all
+
+at=imread('tv.jpg');
+gt=rgb2gray(at);
+cont=imadjust(gt,[.01 .6],[0 1]);
+nosht=histeq(cont);
+level=0.5;
+bt=im2bw(cont,level);
+ht=imfill(bt,'holes');
+set=strel('disk',7);
+ot=imopen(ht,set);
+rt=imresize(ot,[2100 2970]);
+[labeled,num_obj]=bwlabel(rt,4);
+reg=regionprops(rt,'MajorAxisLength','MinorAxisLength','EquivDiameter');
+
+majint=[reg.MajorAxisLength];
+int=[reg.MinorAxisLength];
+
+
+
+as=imread('sv.jpg');
+gs=rgb2gray(as);
+cons=imadjust(gs,[.01 .6],[0 1]);
+noshs=histeq(cons);
+level=0.7;
+bs=im2bw(cons,level);
+%b( all(b,2), : ) = [];
+%b( : ,all(b,1)) = [];
+%c=imclearborder(b);
+hs=imfill(bs,'holes');
+ses=strel('disk',7);
+os=imopen(hs,ses);
+rs=imresize(os,[2100 2970]);
+
+[labeled,num_obj]=bwlabel(rs,4);
+reg=regionprops(rs,'MajorAxisLength','MinorAxisLength','EquivDiameter');
+majmin=[reg.MajorAxisLength];
+min=[reg.MinorAxisLength];
+
+figure;
+subplot(2,2,1),imshow(at);
+title('TV img');
+subplot(2,2,2),imshow(rt);
+title('TV out');
+subplot(2,2,3),imshow(as);
+title('SV img');
+subplot(2,2,4),imshow(rs);
+title('SV out');
+
+for i=1:length(int)
+    majintp(i,1)=majint(1,i);
+    intp(i,1)=int(1,i);
+end
+
+for i=1:length(min)
+    majminp(i,1)=majmin(1,i);
+    minp(i,1)=min(1,i);
+end
+
+for i=1:length(majintp)
+    MatTV(i,1)=majintp(i,1);
+    MatTV(i,2)=intp(i,1);
+end
+MatTV=sortrows(MatTV);
+for i=1:10
+    MatTVs(i,1)=MatTV(length(MatTV)+1-i,1);
+    MatTVs(i,2)=MatTV(length(MatTV)+1-i,2);
+end
+
+
+
+for i=1:length(majminp)
+    MatSV(i,1)=majminp(i,1);
+    MatSV(i,2)=minp(i,1);
+end
+MatSV=sortrows(MatSV);
+for i=1:10
+    MatSVs(i,1)=MatSV(length(MatSV)+1-i,1);
+    MatSVs(i,2)=MatSV(length(MatSV)+1-i,2);
+end
+
+ 
+for i=1:10
+    MatV(i,1)=(MatTVs(i,1)+MatSVs(i,1))/2;
+    MatV(i,2)= MatSVs(i,2);
+    MatV(i,3)= MatTVs(i,2);
+end
+
+n=10;
+
+for i=1:n
+    if MatV(i,3)>MatV(i,2)
+        a=MatV(i,3);
+        b=MatV(i,2);
+        MatV(i,3)=b;
+        MatV(i,2)=a; 
+    else
+    end
+end
+
+for i=1:n
+    MatVs(i,1)=MatV(i,1)/9.98;
+    MatVs(i,2)= MatV(i,2)/9.98;
+    MatVs(i,3)= MatV(i,3)/9.98;
+end
+
+S=0;
+FR=0;
+ER=0;
+SF=0;
+
+for i=1:n
+    Out(i,1)=(((MatVs(i,2)*MatVs(i,3))/(MatVs(i,1)^2))^(1/3));
+    Out(i,2)=MatVs(i,3)/MatVs(i,2);
+    Out(i,3)=MatVs(i,2)/MatVs(i,1);
+    Out(i,4)=(MatVs(i,2)/((MatVs(i,1)*MatVs(i,3))^0.5));
+    S=Out(i,1)+S;
+    FR=Out(i,2)+FR;
+    ER=Out(i,3)+ER;
+    SF=Out(i,4)+SF;
+end
+S=S/n;
+FR=FR/n;
+ER=ER/n;
+fprintf('Characterists of the given CA Sample:\nSphericity=%.4f\nFlakiness Ratio=%.4f\nElongation Ratio=%.4f\nShape Factor=%.4f',S,FR,ER,SF);
